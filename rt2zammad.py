@@ -118,7 +118,7 @@ else:
         if ticket["Status"] == "deleted":
             continue
         ticket["original_id"] = str(i)
-        queues.add(ticket["Queue"])
+        queues.add("RT:"+ticket["Queue"])
         ensure_user(ticket["Creator"])
         ensure_user(ticket["Owner"])
 
@@ -149,7 +149,7 @@ ticket_article = TicketArticle(target)
 tag_obj = Tag(target)
 tags = {tag["name"] for tag in tag_list.all()}
 for queue in queues:
-    queue = queue.lower().split()[0]
+    queue = queue.split()[0]
     if queue not in tags:
         tag_list.create({"name": queue})
 
@@ -255,7 +255,7 @@ for ticket in tickets:
         # Do not add comments to merged ticket
         continue
 
-    tag_obj.add("Ticket", new["id"], ticket["ticket"]["Queue"].lower().split()[0])
+    tag_obj.add("Ticket", new["id"], "RT:"+ticket["ticket"]["Queue"].split()[0])
     ticket_article.create(
         {
             "ticket_id": new["id"],
