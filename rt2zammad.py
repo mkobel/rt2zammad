@@ -224,6 +224,7 @@ for ticket in tickets:
         "note": "RT-import:{}".format(ticket["ticket"]["original_id"]),
         "article": {
             "subject": ticket["ticket"]["Subject"],
+            "from": get_user(users[ticket["ticket"]["Creator"]], "email"),
         },
     }
 
