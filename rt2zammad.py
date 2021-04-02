@@ -228,6 +228,9 @@ for ticket in tickets:
         },
     }
 
+    if ticket["ticket"]["CF.{IB}"] != "":
+        create_args["ibid"] = ticket["ticket"]["CF.{IB}"]
+
     merged = False
     if ticket["ticket"]["original_id"] != ticket["ticket"]["numerical_id"]:
         # Merged ticket
