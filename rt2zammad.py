@@ -114,7 +114,9 @@ else:
         print(f"Loading ticket {i}")
         ticket = source.get_ticket(i)
         if ticket is None:
-            break
+            continue
+        if ticket["Status"] == "deleted":
+            continue
         ticket["original_id"] = str(i)
         queues.add(ticket["Queue"])
         ensure_user(ticket["Creator"])
