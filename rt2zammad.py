@@ -192,6 +192,23 @@ def get_user(userdata, attr="login", default=None):
         return USERMAP[lemail][attr]
     return USERMAP[lemail].get(attr, default)
 
+def create_files(ticket_id, ticket_history):
+    files = []
+    for a, title in ticket_history["Attachments"]:
+        data = attachments[a]
+        if data["Filename"] in ("", "signature.asc"):
+            continue
+        print(f"  add attachment {data['Filename']}")
+        raw_content = source.get_attachment_content(ticket_id, data["id"])
+        files.append(
+            {
+                "filename": data["Filename"],
+                "data": base64.b64encode(raw_content).decode("utf-8"),
+                "mime-type": data["ContentType"],
+            }
+        )
+
+    return files
 
 # Create tickets
 for ticket in tickets:
@@ -222,6 +239,8 @@ for ticket in tickets:
     else:
         create_args["state_id"] = STATUSMAP[ticket["ticket"]["Status"]]
         create_args["article"]["body"] = ticket["history"][0]["Content"]
+        files = create_files(ticket["ticket"]["numerical_id"], ticket["history"][0])
+        create_args["article"]["attachments"] = files
         new = get_zammad(creator).ticket.create(create_args)
 
     print(f"Created ticket {new['id']}")
@@ -247,24 +266,14 @@ for ticket in tickets:
     for item in ticket["history"]:
         if item["Type"] not in ("Correspond", "Comment"):
             continue
-        files = []
-        for a, title in item["Attachments"]:
-            data = attachments[a]
-            if data["Filename"] in ("", "signature.asc"):
-                continue
-            files.append(
-                {
-                    "filename": data["Filename"],
-                    "data": base64.b64encode(data["Content"]).decode("utf-8"),
-                    "mime-type": data["ContentType"],
-                }
-            )
+        files = create_files(ticket["ticket"]["numerical_id"], item)
         creator_id = get_user(users[item["Creator"]], "id")
         chown = creator_id != new["customer_id"] and "Agent" not in get_user(
             users[item["Creator"]], "roles", []
         )
         if chown:
             target.ticket.update(new["id"], {"customer_id": creator_id})
+
         TicketArticle(get_zammad(get_user(users[item["Creator"]]))).create(
             {
                 "ticket_id": new["id"],
@@ -273,5 +282,6 @@ for ticket in tickets:
                 "attachments": files,
             }
         )
+
         if chown:
             target.ticket.update(new["id"], {"customer_id": new["customer_id"]})
